@@ -37,6 +37,8 @@ type Player struct {
 	Amulet    *Item
 	LeftRing  *Item
 	RightRing *Item
+
+	Inventory []*Item
 }
 
 func NewPlayer() *Player {

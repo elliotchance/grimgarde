@@ -7,19 +7,19 @@ import (
 	"strings"
 )
 
-type ItemClass uint8
+type ItemClass string
 
 const (
-	ItemClassHelmet = ItemClass(1)
-	ItemClassChest  = ItemClass(2)
-	ItemClassArms   = ItemClass(3)
-	ItemClassGloves = ItemClass(4)
-	ItemClassBelt   = ItemClass(5)
-	ItemClassPants  = ItemClass(6)
-	ItemClassBoots  = ItemClass(7)
-	ItemClassWeapon = ItemClass(8)
-	ItemClassRing   = ItemClass(9)
-	ItemClassAmulet = ItemClass(10)
+	ItemClassHelmet = ItemClass("Helmet")
+	ItemClassChest  = ItemClass("Chest")
+	ItemClassArms   = ItemClass("Arms")
+	ItemClassGloves = ItemClass("Gloves")
+	ItemClassBelt   = ItemClass("Belt")
+	ItemClassPants  = ItemClass("Pants")
+	ItemClassBoots  = ItemClass("Boots")
+	ItemClassWeapon = ItemClass("Weapon")
+	ItemClassRing   = ItemClass("Ring")
+	ItemClassAmulet = ItemClass("Amulet")
 )
 
 type AttackRating struct {
@@ -86,15 +86,26 @@ func (item Item) DamagePerSecond() int {
 	return int(damage)
 }
 
-func (item Item) String() string {
-	s := item.Name + ":"
+func (item *Item) Lines() []string {
+	var lines []string
+	if len(item.Name) >= 25 {
+		parts := strings.Split(item.Name, " of ")
+		lines = append(lines, parts[0], "of "+parts[1])
+	} else {
+		lines = append(lines, item.Name, "")
+	}
 	if item.AttackRating.Name != "" {
-		s += fmt.Sprintf("\n  %d DPS (%s Attack Rating)", item.DamagePerSecond(), item.AttackRating.Name)
+		lines = append(lines, fmt.Sprintf("%d DPS (%s Attack Rating)", item.DamagePerSecond(), item.AttackRating.Name))
 	}
+	lines = append(lines, "")
 	for _, stat := range item.Stats {
-		s += "\n  " + stat.String()
+		lines = append(lines, stat.String())
 	}
-	return s
+	return lines
+}
+
+func (item Item) String() string {
+	return strings.Join(item.Lines(), "\n")
 }
 
 type ItemStatType struct {
@@ -276,6 +287,7 @@ func GenerateItem(itemType ItemType) *Item {
 
 	item := &Item{
 		Name:         strings.TrimSpace(fmt.Sprintf("%s %s %s of %s", rarity, prefix, itemType.Name, suffix)),
+		Type:         itemType,
 		AttackRating: itemType.AttackRating,
 		Stats:        []ItemStat{prefixStat, suffixStat},
 	}
@@ -374,4 +386,19 @@ func GenerateRing() *Item {
 	return GenerateItem(pickSlice([]ItemType{
 		Ring,
 	}))
+}
+
+func GenerateAnyItem() *Item {
+	return pickSlice([]func() *Item{
+		GenerateAmulet,
+		GenerateArms,
+		GenerateBelt,
+		GenerateBoots,
+		GenerateChest,
+		GenerateGloves,
+		GenerateHelmet,
+		GeneratePants,
+		GenerateRing,
+		GenerateWeapon,
+	})()
 }

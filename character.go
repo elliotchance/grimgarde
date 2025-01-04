@@ -27,7 +27,6 @@ func (g *CharacterView) Draw(screen tcell.Screen) {
 	g.Form.Clear(true)
 
 	g.Form.
-		AddInputField("Name", "", 20, nil, nil).
 		AddTextView("Level", fmt.Sprintf("%d (%d of %d)", g.player.Level, g.player.LevelExp, g.player.NextLevelExp(g.player.Level)), 20, 1, false, false).
 		AddTextView("Life", fmt.Sprintf("%d / %d", g.player.Life, g.player.TotalLife()), 10, 1, false, false).
 		AddTextView("Mana", fmt.Sprintf("%d / %d", g.player.Mana, g.player.TotalMana()), 10, 1, false, false).

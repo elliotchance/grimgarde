@@ -29,9 +29,11 @@ func main() {
 	player.LeftRing = GenerateRing()
 	player.RightRing = GenerateRing()
 
-	player.Fresh()
+	for i := 0; i < 50; i++ {
+		player.Inventory = append(player.Inventory, GenerateAnyItem())
+	}
 
-	// fmt.Println(p.String())
+	player.Fresh()
 
 	world := NewWorld(townMap)
 
@@ -47,37 +49,75 @@ func main() {
 			}
 		}
 
-		// Render player
 		player.Draw(screen, x+(w/2), y+(h/2))
 
 		return x, y, w, h
 	})
+
 	// status := tview.NewTextView().SetText("status bar")
 	app := tview.NewApplication()
-	grid := tview.NewGrid().AddItem(NewCharacterView(player), 0, 0, 1, 1, 1, 1, false).
-		AddItem(canvas, 0, 1, 1, 1, 1, 1, true)
+	grid := tview.NewFlex().
+		AddItem(canvas, 0, 1, true)
 	// AddItem(status, 1, 0, 1, 2, 1, 1, false)
+
+	characterScreenIsOpen := false
+	inventoryScreenIsOpen := false
+
 	if err := app.
 		SetRoot(grid, true).
 		EnableMouse(true).
 		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			switch event.Key() {
-			case tcell.KeyLeft:
-				world.X--
-			case tcell.KeyRight:
-				world.X++
-			case tcell.KeyUp:
-				world.Y--
-			case tcell.KeyDown:
-				world.Y++
+			if event.Key() == tcell.KeyRune {
+				grid.Clear()
+				switch event.Rune() {
+				case 'c':
+					if characterScreenIsOpen {
+						grid.AddItem(canvas, 0, 1, false)
+						app.SetFocus(canvas)
+					} else {
+						characterView := NewCharacterView(player)
+						grid.AddItem(characterView, 70, 1, false)
+						grid.AddItem(canvas, 0, 1, false)
+						app.SetFocus(characterView)
+					}
+					characterScreenIsOpen = !characterScreenIsOpen
+				case 'i':
+					if inventoryScreenIsOpen {
+						grid.AddItem(canvas, 0, 1, false)
+						app.SetFocus(canvas)
+					} else {
+						inventory := NewInventoryView(player)
+						grid.AddItem(inventory, 70, 1, false).
+							AddItem(canvas, 0, 1, false)
+						app.SetFocus(inventory)
+					}
+					inventoryScreenIsOpen = !inventoryScreenIsOpen
+				}
+
+				return event
 			}
-			if world.X < 0 {
-				world.X = 0
+
+			if canvas.HasFocus() {
+				switch event.Key() {
+				case tcell.KeyLeft:
+					world.X--
+				case tcell.KeyRight:
+					world.X++
+				case tcell.KeyUp:
+					world.Y--
+				case tcell.KeyDown:
+					world.Y++
+				}
+				if world.X < 0 {
+					world.X = 0
+				}
+				if world.Y < 0 {
+					world.Y = 0
+				}
 			}
-			if world.Y < 0 {
-				world.Y = 0
-			}
+
 			return event
+
 		}).
 		Run(); err != nil {
 		panic(err)

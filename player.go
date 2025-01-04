@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 type Player struct {
@@ -225,7 +228,7 @@ func (p *Player) String() string {
 	return strings.Join(items, "\n\n")
 }
 
-func (p *Player) Draw() {
+func (p *Player) Draw(screen tcell.Screen, playerX, playerY int) {
 	/*
 			   ,,
 		 *  '()'  /  )   /)
@@ -234,4 +237,24 @@ func (p *Player) Draw() {
 		    /  \
 		   ^    ^
 	*/
+
+	draw := func(s string, x, y int) {
+		tview.Print(screen, s, playerX+x, playerY+y, len(s), tview.AlignLeft, tcell.ColorWhite)
+	}
+
+	// Basic body
+	draw(" () ", -1, 0)
+	draw(" /||\\ ", -2, 1)
+	draw(" ' -- ' ", -3, 2)
+	draw(" /  \\ ", -2, 3)
+	draw(" ^ ", -3, 4)
+	draw(" ^ ", 2, 4)
+
+	// Left mace
+	draw(" * ", -5, 0)
+	draw(" \\ ", -4, 1)
+
+	// Right sword
+	draw(" / ", 4, 0)
+	draw(" / ", 3, 1)
 }

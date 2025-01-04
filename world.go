@@ -1,7 +1,8 @@
 package main
 
 type World struct {
-	Map *Map
+	Map  *Map
+	X, Y int
 }
 
 func NewWorld(m *Map) *World {
@@ -10,11 +11,11 @@ func NewWorld(m *Map) *World {
 	}
 }
 
-func (e *World) Viewport(x, y, h, w int) *Map {
-	v := NewEmptyMap(h, w)
-	for a := 0; a < h; a++ {
-		for b := 0; b < w; b++ {
-			v.Data[a][b] = e.Map.Data[a+y][b+x]
+func (w *World) Viewport(width, height int) *Map {
+	v := NewEmptyMap(width, height)
+	for a := 0; a < height; a++ {
+		for b := 0; b < width; b++ {
+			v.Data[a][b] = w.Map.Data[a+w.Y][b+w.X]
 		}
 	}
 	return v

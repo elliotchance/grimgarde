@@ -5,99 +5,81 @@ import (
 	"github.com/rivo/tview"
 )
 
-/*
-     ,,
- *  '()'  /  )   /)
-  \ /||\ /  (   /
-   ' -- '
-    /  \
-   ^    ^
-
-*/
-
 func main() {
-	// p := NewPlayer()
-	// p.AddExp(1500)
-	// p.AddExp(200)
-	// p.AddExp(500)
+	player := NewPlayer()
+	player.AddExp(1500)
+	player.AddExp(200)
+	player.AddExp(500)
 
-	// p.Strength += 3
-	// p.Intelligence += 5
-	// p.Dexterity += 7
-	// p.Vitality += 11
+	player.Strength += 3
+	player.Intelligence += 5
+	player.Dexterity += 7
+	player.Vitality += 11
 
-	// p.Helmet = GenerateHelmet()
-	// p.Chest = GenerateChest()
-	// p.Arms = GenerateArms()
-	// p.Gloves = GenerateGloves()
-	// p.Belt = GenerateBelt()
-	// p.Pants = GeneratePants()
-	// p.Boots = GenerateBoots()
-	// p.LeftHand = GenerateWeapon()
-	// p.RightHand = GenerateWeapon()
-	// p.Amulet = GenerateAmulet()
-	// p.LeftRing = GenerateRing()
-	// p.RightRing = GenerateRing()
+	player.Helmet = GenerateHelmet()
+	player.Chest = GenerateChest()
+	player.Arms = GenerateArms()
+	player.Gloves = GenerateGloves()
+	player.Belt = GenerateBelt()
+	player.Pants = GeneratePants()
+	player.Boots = GenerateBoots()
+	player.LeftHand = GenerateWeapon()
+	player.RightHand = GenerateWeapon()
+	player.Amulet = GenerateAmulet()
+	player.LeftRing = GenerateRing()
+	player.RightRing = GenerateRing()
 
-	// p.Fresh()
+	player.Fresh()
 
 	// fmt.Println(p.String())
 
-	playerX := 4
-	playerY := 4
-
 	world := NewWorld(townMap)
-	// v := world.Viewport(playerX-4, playerY-4, 9, 9)
-	// fmt.Println(v)
-	// panic("")
 
-	box := tview.NewBox().SetBorder(true).SetTitle("Character")
 	canvas := tview.NewBox()
 	canvas.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 		x, y, w, h := canvas.GetInnerRect()
 
-		v := world.Viewport(playerX-4, playerY-4, 9, 9)
-		// fmt.Println(v)
-
+		v := world.Viewport(w, h)
 		for a := 0; a < v.Width; a++ {
 			for b := 0; b < v.Height; b++ {
 				ch := v.Data[b][a]
-				// color := "black"
-				// if ch == '0' || ch == 'd' {
-				// 	color = "red"
-				// }
 				tview.Print(screen, string(ch), x+a, y+b, 1, tview.AlignLeft, tcell.ColorWhite)
 			}
 		}
 
-		tview.Print(screen, "🧍", x+4, y+4, 1, tview.AlignLeft, tcell.ColorWhite)
+		// Render player
+		player.Draw(screen, x+(w/2), y+(h/2))
+
 		return x, y, w, h
 	})
 	// status := tview.NewTextView().SetText("status bar")
-	grid := tview.NewGrid().AddItem(box, 0, 0, 1, 1, 1, 1, false).
+	app := tview.NewApplication()
+	grid := tview.NewGrid().AddItem(NewCharacterView(player), 0, 0, 1, 1, 1, 1, false).
 		AddItem(canvas, 0, 1, 1, 1, 1, 1, true)
-		// AddItem(status, 1, 0, 1, 2, 1, 1, false)
-	if err := tview.NewApplication().
+	// AddItem(status, 1, 0, 1, 2, 1, 1, false)
+	if err := app.
 		SetRoot(grid, true).
+		EnableMouse(true).
 		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
 			case tcell.KeyLeft:
-				playerX--
+				world.X--
 			case tcell.KeyRight:
-				playerX++
+				world.X++
 			case tcell.KeyUp:
-				playerY--
+				world.Y--
 			case tcell.KeyDown:
-				playerY++
+				world.Y++
 			}
-			if playerX < 4 {
-				playerX = 4
+			if world.X < 0 {
+				world.X = 0
 			}
-			if playerY < 4 {
-				playerY = 4
+			if world.Y < 0 {
+				world.Y = 0
 			}
 			return event
-		}).Run(); err != nil {
+		}).
+		Run(); err != nil {
 		panic(err)
 	}
 }

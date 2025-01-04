@@ -29,7 +29,7 @@ func main() {
 	player.LeftRing = GenerateRing()
 	player.RightRing = GenerateRing()
 
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 10; i++ {
 		player.Inventory = append(player.Inventory, GenerateAnyItem())
 	}
 
@@ -54,18 +54,23 @@ func main() {
 		return x, y, w, h
 	})
 
-	// status := tview.NewTextView().SetText("status bar")
 	app := tview.NewApplication()
+
 	grid := tview.NewFlex().
 		AddItem(canvas, 0, 1, true)
-	// AddItem(status, 1, 0, 1, 2, 1, 1, false)
+
+	outerGrid := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(grid, 0, 1, false).
+		AddItem(NewStatusView(player), 1, 1, false)
 
 	characterScreenIsOpen := false
 	inventoryScreenIsOpen := false
 
 	if err := app.
-		SetRoot(grid, true).
+		SetRoot(outerGrid, true).
 		EnableMouse(true).
+		SetFocus(grid).
 		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Key() == tcell.KeyRune {
 				grid.Clear()

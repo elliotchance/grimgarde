@@ -199,6 +199,10 @@ func (p *Player) TotalMana() int {
 	return p.PlayerStats().Get(Mana)
 }
 
+func (p *Player) MovementSpeed() float64 {
+	return 8
+}
+
 func (p *Player) String() string {
 	items := []string{
 		fmt.Sprintf("Level: %d", p.Level),
@@ -245,18 +249,18 @@ func (p *Player) Draw(screen tcell.Screen, playerX, playerY int) {
 	}
 
 	// Basic body
-	draw(" () ", -1, 0)
-	draw(" /||\\ ", -2, 1)
-	draw(" ' -- ' ", -3, 2)
-	draw(" /  \\ ", -2, 3)
-	draw(" ^ ", -3, 4)
-	draw(" ^ ", 2, 4)
+	draw(" () ", -1, -2)
+	draw(" /||\\ ", -2, -1)
+	draw(" ' -- ' ", -3, 0)
+	draw(" /  \\ ", -2, 1)
+	draw(" ^ ", -3, 2)
+	draw(" ^ ", 2, 2)
 
 	// Left mace
-	draw(" * ", -5, 0)
-	draw(" \\ ", -4, 1)
+	draw(" * ", -5, -2)
+	draw(" \\ ", -4, -1)
 
 	// Right sword
-	draw(" / ", 4, 0)
-	draw(" / ", 3, 1)
+	draw(" / ", 4, -2)
+	draw(" / ", 3, -1)
 }

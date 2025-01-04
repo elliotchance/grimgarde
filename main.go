@@ -35,29 +35,13 @@ func main() {
 
 	player.Fresh()
 
-	world := NewWorld(townMap)
-
-	canvas := tview.NewBox()
-	canvas.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
-		x, y, w, h := canvas.GetInnerRect()
-
-		v := world.Viewport(w, h)
-		for a := 0; a < v.Width; a++ {
-			for b := 0; b < v.Height; b++ {
-				ch := v.Data[b][a]
-				tview.Print(screen, string(ch), x+a, y+b, 1, tview.AlignLeft, tcell.ColorWhite)
-			}
-		}
-
-		player.Draw(screen, x+(w/2), y+(h/2))
-
-		return x, y, w, h
-	})
-
 	app := tview.NewApplication()
+	world := NewWorld(townMap, player)
+	world.PlayerX, world.PlayerY = 75, 25
+	world.Start(app)
 
 	grid := tview.NewFlex().
-		AddItem(canvas, 0, 1, true)
+		AddItem(world, 0, 1, true)
 
 	outerGrid := tview.NewFlex().
 		SetDirection(tview.FlexRow).
@@ -77,23 +61,23 @@ func main() {
 				switch event.Rune() {
 				case 'c':
 					if characterScreenIsOpen {
-						grid.AddItem(canvas, 0, 1, false)
-						app.SetFocus(canvas)
+						grid.AddItem(world, 0, 1, false)
+						app.SetFocus(world)
 					} else {
 						characterView := NewCharacterView(player)
 						grid.AddItem(characterView, 70, 1, false)
-						grid.AddItem(canvas, 0, 1, false)
+						grid.AddItem(world, 0, 1, false)
 						app.SetFocus(characterView)
 					}
 					characterScreenIsOpen = !characterScreenIsOpen
 				case 'i':
 					if inventoryScreenIsOpen {
-						grid.AddItem(canvas, 0, 1, false)
-						app.SetFocus(canvas)
+						grid.AddItem(world, 0, 1, false)
+						app.SetFocus(world)
 					} else {
 						inventory := NewInventoryView(player)
 						grid.AddItem(inventory, 70, 1, false).
-							AddItem(canvas, 0, 1, false)
+							AddItem(world, 0, 1, false)
 						app.SetFocus(inventory)
 					}
 					inventoryScreenIsOpen = !inventoryScreenIsOpen
@@ -102,27 +86,7 @@ func main() {
 				return event
 			}
 
-			if canvas.HasFocus() {
-				switch event.Key() {
-				case tcell.KeyLeft:
-					world.X--
-				case tcell.KeyRight:
-					world.X++
-				case tcell.KeyUp:
-					world.Y--
-				case tcell.KeyDown:
-					world.Y++
-				}
-				if world.X < 0 {
-					world.X = 0
-				}
-				if world.Y < 0 {
-					world.Y = 0
-				}
-			}
-
 			return event
-
 		}).
 		Run(); err != nil {
 		panic(err)

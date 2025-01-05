@@ -19,9 +19,11 @@ type Path struct {
 	// keep this value as PlayerX and PlayerY will change over multiple frames
 	// during the journey and the correct new position of each frame.
 	StartX, StartY int
+
+	Boxer Boxer
 }
 
-func NewPath(startX, startY, destX, destY int, movementSpeed float64, fps int) *Path {
+func NewPath(startX, startY, destX, destY int, movementSpeed float64, fps int, boxer Boxer) *Path {
 	return &Path{
 		StartX:          startX,
 		StartY:          startY,
@@ -31,6 +33,7 @@ func NewPath(startX, startY, destX, destY int, movementSpeed float64, fps int) *
 		MovementSpeed:   movementSpeed,
 		FramesPerSecond: fps,
 		IsMoving:        true,
+		Boxer:           boxer,
 	}
 }
 
@@ -38,22 +41,32 @@ func NewEmptyPath() *Path {
 	return &Path{}
 }
 
-func (p *Path) Tick() (int, int) {
-	p.FrameNumber++
+func (p *Path) Tick(canMove func(b Box) bool) (int, int) {
+	newX, newY, isMoving := p.nextTick(p.FrameNumber + 1)
+	if canMove(p.Boxer.Box(newX, newY)) {
+		p.IsMoving = isMoving
+		p.FrameNumber++
+		return newX, newY
+	}
 
+	p.IsMoving = false
+	newX, newY, _ = p.nextTick(p.FrameNumber)
+	return newX, newY
+}
+
+func (p *Path) nextTick(frameNumber int) (int, int, bool) {
 	// p.Distance is the total diagonal length to Dest. We calculate
 	// `traveled` as the length of the diagonal based on movement speed
 	// and how many frames have passed. From this ideal location we can
 	// calculate the correct PlayerX and PlayerY.
-	traveled := (p.MovementSpeed / float64(p.FramesPerSecond)) * float64(p.FrameNumber)
+	traveled := (p.MovementSpeed / float64(p.FramesPerSecond)) * float64(frameNumber)
 	portion := traveled / p.Distance
 	if portion > 1 {
 		portion = 1
 	}
-	p.IsMoving = portion < 1
 
 	return p.StartX + int(math.Round(float64(p.DestX-p.StartX)*portion)),
-		p.StartY + int(math.Round(float64(p.DestY-p.StartY)*portion))
+		p.StartY + int(math.Round(float64(p.DestY-p.StartY)*portion)), portion < 1
 }
 
 func distance(x1, y1, x2, y2 int) float64 {

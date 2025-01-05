@@ -39,12 +39,29 @@ type Player struct {
 	RightRing *Item
 
 	Inventory []*Item
+
+	Path            *Path
+	FramesPerSecond int
+	X, Y            int
 }
 
-func NewPlayer() *Player {
+func NewPlayer(x, y, fps int) *Player {
 	return &Player{
-		Level: 1,
+		Level:           1,
+		Path:            NewEmptyPath(),
+		FramesPerSecond: fps,
+		X:               x,
+		Y:               y,
 	}
+}
+
+func (p *Player) MoveTo(x, y int) {
+	p.Path = NewPath(p.X, p.Y, x, y, p.MovementSpeed(), p.FramesPerSecond, p)
+}
+
+func (p *Player) Box(x, y int) Box {
+	// The (x, y) refers to the center, which is the left side of the belt.
+	return NewBox(x-4, y-2, x+5, y+2)
 }
 
 func (p *Player) AddExp(exp int) {

@@ -23,9 +23,14 @@ func NewSpider(x, y, fps int) *Monster {
 }
 
 func (m *Monster) MoveTo(x, y int) {
-	m.Path = NewPath(m.X, m.Y, x, y, m.MovementSpeed, m.FramesPerSecond)
+	m.Path = NewPath(m.X, m.Y, x, y, m.MovementSpeed, m.FramesPerSecond, m)
 }
 
-func (m *Monster) Tick() {
-	m.X, m.Y = m.Path.Tick()
+func (m *Monster) Tick(canMove func(b Box) bool) {
+	m.X, m.Y = m.Path.Tick(canMove)
+}
+
+func (m *Monster) Box(x, y int) Box {
+	// The (x, y) refers to the center.
+	return NewBox(x-4, y-2, x+5, y+2)
 }

@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
-	player := NewPlayer()
+	framesPerSecond := 8
+	player := NewPlayer(75, 25, framesPerSecond)
 	player.AddExp(1500)
 	player.AddExp(200)
 	player.AddExp(500)
@@ -36,12 +37,10 @@ func main() {
 	player.Fresh()
 
 	app := tview.NewApplication()
-	framesPerSecond := 8
 	world := NewWorld(townMap, player, framesPerSecond)
-	world.PlayerX, world.PlayerY = 75, 25
 
 	spider := NewSpider(45, 28, framesPerSecond)
-	spider.MoveTo(world.PlayerX, world.PlayerY)
+	spider.MoveTo(world.player.X, world.player.Y)
 	world.Monsters = append(world.Monsters, spider)
 
 	world.Start(app)

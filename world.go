@@ -10,15 +10,9 @@ import (
 type World struct {
 	*tview.Box
 	player          *Player
-	playerPath      *Path
 	Map             *Map
 	FramesPerSecond int
-
-	// This is where the player is located on to the map. This position is in the
-	// center of the player sprite (which is the left side of the belt).
-	PlayerX, PlayerY int
-
-	Monsters []*Monster
+	Monsters        []*Monster
 }
 
 func NewWorld(m *Map, player *Player, fps int) *World {
@@ -26,7 +20,6 @@ func NewWorld(m *Map, player *Player, fps int) *World {
 	w := &World{
 		Box:             box,
 		player:          player,
-		playerPath:      NewEmptyPath(),
 		Map:             m,
 		FramesPerSecond: fps,
 	}
@@ -37,7 +30,7 @@ func NewWorld(m *Map, player *Player, fps int) *World {
 			// viewport and player location.
 			x, y := event.Position()
 			vx, vy, vw, vh := box.GetInnerRect()
-			w.SetDest(w.PlayerX-(vw/2)+x-vx, w.PlayerY-(vh/2)+y+vy)
+			w.player.MoveTo(w.player.X-(vw/2)+x-vx, w.player.Y-(vh/2)+y+vy)
 		}
 		return action, event
 	})
@@ -45,13 +38,9 @@ func NewWorld(m *Map, player *Player, fps int) *World {
 	return w
 }
 
-func (w *World) SetDest(x, y int) {
-	w.playerPath = NewPath(w.PlayerX, w.PlayerY, x, y, w.player.MovementSpeed(), w.FramesPerSecond)
-}
-
 func (w *World) Viewport(width, height int) *Map {
 	v := NewEmptyMap(width, height)
-	x, y := w.PlayerX-width/2, w.PlayerY-height/2
+	x, y := w.player.X-width/2, w.player.Y-height/2
 	for a := 0; a < height; a++ {
 		for b := 0; b < width; b++ {
 			if a+y >= 0 && a+y < len(w.Map.Data) &&
@@ -74,17 +63,28 @@ func (w *World) Draw(screen tcell.Screen) {
 		}
 	}
 
-	if w.playerPath.IsMoving {
-		tview.Print(screen, "@",
-			w.playerPath.DestX-w.PlayerX+x+(width/2), w.playerPath.DestY-w.PlayerY+y+(height/2),
-			1, tview.AlignLeft, tcell.ColorWhite)
+	if w.player.Path.IsMoving {
+		w.Print(screen, w.player.Path.DestX, w.player.Path.DestY, "@")
 	}
 
 	for _, monster := range w.Monsters {
-		w.player.Draw(screen, monster.X-w.PlayerX+x+(width/2), monster.Y-w.PlayerY+y+(height/2))
+		w.player.Draw(screen, monster.X-w.player.X+x+(width/2), monster.Y-w.player.Y+y+(height/2))
+
+		b := monster.Box(0, 0)
+		w.Print(screen, b.x1, b.y1, "+")
+		w.Print(screen, b.x2, b.y1, "+")
+		w.Print(screen, b.x1, b.y2, "+")
+		w.Print(screen, b.x2, b.y2, "+")
 	}
 
 	w.player.Draw(screen, x+(width/2), y+(height/2))
+}
+
+func (w *World) Print(screen tcell.Screen, atX, atY int, s string) {
+	x, y, width, height := w.Box.GetInnerRect()
+	tview.Print(screen, s,
+		atX-w.player.X+x+(width/2), atY-w.player.Y+y+(height/2),
+		len(s), tview.AlignLeft, tcell.ColorWhite)
 }
 
 func (w *World) Start(app *tview.Application) {
@@ -99,20 +99,24 @@ func (w *World) Start(app *tview.Application) {
 					return
 				case <-ticker.C:
 					redraw := false
-					if w.playerPath.IsMoving {
-						w.PlayerX, w.PlayerY = w.playerPath.Tick()
+					if w.player.Path.IsMoving {
+						w.player.X, w.player.Y = w.player.Path.Tick(func(b Box) bool {
+							return true
+						})
 						redraw = true
 
 						// When the player moves, the monsters should follow.
 						for _, monster := range w.Monsters {
-							monster.MoveTo(w.PlayerX, w.PlayerY)
+							monster.MoveTo(w.player.X, w.player.Y)
 						}
 					}
 
 					for _, monster := range w.Monsters {
 						if monster.Path.IsMoving {
 							redraw = true
-							monster.Tick()
+							monster.Tick(func(b Box) bool {
+								return !b.Intersect(w.player.Box(w.player.X, w.player.Y))
+							})
 						}
 					}
 

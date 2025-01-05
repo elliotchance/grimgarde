@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -10,34 +9,26 @@ import (
 
 type World struct {
 	*tview.Box
-	player *Player
-	Map    *Map
+	player          *Player
+	playerPath      *Path
+	Map             *Map
+	FramesPerSecond int
 
 	// This is where the player is located on to the map. This position is in the
 	// center of the player sprite (which is the left side of the belt).
 	PlayerX, PlayerY int
 
-	// DestX and DestY is where the player is moving towards. When a new
-	// destination is set, we precalculate the Distance so that each FrameNumber
-	// is proportionally correct to the distance of travel. Otherwise, the lower
-	// resolution of screen would make the movement look jagged.
-	DestX, DestY int
-	IsMoving     bool
-	Distance     float64
-	FrameNumber  int
-
-	// StartX and StartY is where the player was when the Dest was set. We need to
-	// keep this value as PlayerX and PlayerY will change over multiple frames
-	// during the journey and the correct new position of each frame.
-	StartX, StartY int
+	Monsters []*Monster
 }
 
-func NewWorld(m *Map, player *Player) *World {
+func NewWorld(m *Map, player *Player, fps int) *World {
 	box := tview.NewBox()
 	w := &World{
-		Box:    box,
-		player: player,
-		Map:    m,
+		Box:             box,
+		player:          player,
+		playerPath:      NewEmptyPath(),
+		Map:             m,
+		FramesPerSecond: fps,
 	}
 
 	box.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
@@ -55,11 +46,7 @@ func NewWorld(m *Map, player *Player) *World {
 }
 
 func (w *World) SetDest(x, y int) {
-	w.IsMoving = true
-	w.StartX, w.StartY = w.PlayerX, w.PlayerY
-	w.DestX, w.DestY = x, y
-	w.Distance = distance(w.StartX, w.StartY, w.DestX, w.DestY)
-	w.FrameNumber = 0
+	w.playerPath = NewPath(w.PlayerX, w.PlayerY, x, y, w.player.MovementSpeed(), w.FramesPerSecond)
 }
 
 func (w *World) Viewport(width, height int) *Map {
@@ -87,8 +74,14 @@ func (w *World) Draw(screen tcell.Screen) {
 		}
 	}
 
-	if w.IsMoving {
-		tview.Print(screen, "@", w.DestX-w.PlayerX+x+(width/2), w.DestY-w.PlayerY+y+(height/2), 1, tview.AlignLeft, tcell.ColorWhite)
+	if w.playerPath.IsMoving {
+		tview.Print(screen, "@",
+			w.playerPath.DestX-w.PlayerX+x+(width/2), w.playerPath.DestY-w.PlayerY+y+(height/2),
+			1, tview.AlignLeft, tcell.ColorWhite)
+	}
+
+	for _, monster := range w.Monsters {
+		w.player.Draw(screen, monster.X-w.PlayerX+x+(width/2), monster.Y-w.PlayerY+y+(height/2))
 	}
 
 	w.player.Draw(screen, x+(width/2), y+(height/2))
@@ -96,8 +89,7 @@ func (w *World) Draw(screen tcell.Screen) {
 
 func (w *World) Start(app *tview.Application) {
 	go func() {
-		perSecond := 8.0
-		ticker := time.NewTicker(time.Duration(1000/perSecond) * time.Millisecond)
+		ticker := time.NewTicker(time.Duration(1000/w.FramesPerSecond) * time.Millisecond)
 		done := make(chan bool)
 
 		go func() {
@@ -106,27 +98,29 @@ func (w *World) Start(app *tview.Application) {
 				case <-done:
 					return
 				case <-ticker.C:
-					if w.IsMoving {
-						w.FrameNumber++
+					redraw := false
+					if w.playerPath.IsMoving {
+						w.PlayerX, w.PlayerY = w.playerPath.Tick()
+						redraw = true
 
-						// w.Distance is the total diagonal length to Dest. We calculate
-						// `traveled` as the length of the diagonal based on movement speed
-						// and how many frames have passed. From this ideal location we can
-						// calculate the correct PlayerX and PlayerY.
-						traveled := (w.player.MovementSpeed() / perSecond) * float64(w.FrameNumber)
-						portion := traveled / w.Distance
-						w.PlayerX = w.StartX + int(math.Round(float64(w.DestX-w.StartX)*portion))
-						w.PlayerY = w.StartY + int(math.Round(float64(w.DestY-w.StartY)*portion))
-						w.IsMoving = portion < 1
+						// When the player moves, the monsters should follow.
+						for _, monster := range w.Monsters {
+							monster.MoveTo(w.PlayerX, w.PlayerY)
+						}
+					}
 
+					for _, monster := range w.Monsters {
+						if monster.Path.IsMoving {
+							redraw = true
+							monster.Tick()
+						}
+					}
+
+					if redraw {
 						app.Draw()
 					}
 				}
 			}
 		}()
 	}()
-}
-
-func distance(x1, y1, x2, y2 int) float64 {
-	return math.Sqrt(math.Pow(float64(x1-x2), 2) + math.Pow(float64(y1-y2), 2))
 }

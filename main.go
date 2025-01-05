@@ -36,8 +36,14 @@ func main() {
 	player.Fresh()
 
 	app := tview.NewApplication()
-	world := NewWorld(townMap, player)
+	framesPerSecond := 8
+	world := NewWorld(townMap, player, framesPerSecond)
 	world.PlayerX, world.PlayerY = 75, 25
+
+	spider := NewSpider(45, 28, framesPerSecond)
+	spider.MoveTo(world.PlayerX, world.PlayerY)
+	world.Monsters = append(world.Monsters, spider)
+
 	world.Start(app)
 
 	grid := tview.NewFlex().

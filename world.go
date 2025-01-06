@@ -68,7 +68,7 @@ func (w *World) Draw(screen tcell.Screen) {
 	}
 
 	for _, monster := range w.Monsters {
-		w.player.Draw(screen, monster.X-w.player.X+x+(width/2), monster.Y-w.player.Y+y+(height/2))
+		monster.Draw(screen, monster.X-w.player.X+x+(width/2), monster.Y-w.player.Y+y+(height/2))
 
 		b := monster.Box(0, 0)
 		w.Print(screen, b.x1, b.y1, "+")
@@ -78,6 +78,13 @@ func (w *World) Draw(screen tcell.Screen) {
 	}
 
 	w.player.Draw(screen, x+(width/2), y+(height/2))
+
+	// b := w.player.Box(0, 0)
+	// w.Print(screen, b.x1, b.y1, "+")
+	// w.Print(screen, b.x2, b.y1, "+")
+	// w.Print(screen, b.x1, b.y2, "+")
+	// w.Print(screen, b.x2, b.y2, "+")
+	// w.Print(screen, b.x1, b.y2+3, fmt.Sprintf("%d == %d", w.Monsters[0].Box(0, 0).x2, b.x1-1))
 }
 
 func (w *World) Print(screen tcell.Screen, atX, atY int, s string) {
@@ -117,6 +124,13 @@ func (w *World) Start(app *tview.Application) {
 							monster.Tick(func(b Box) bool {
 								return !b.Intersect(w.player.Box(w.player.X, w.player.Y))
 							})
+						}
+
+						if monster.Box(0, 0).Touching(w.player.Box(0, 0)) {
+							didAttack := monster.Attack(w.player)
+							if didAttack {
+								redraw = true
+							}
 						}
 					}
 

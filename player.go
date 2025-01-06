@@ -9,6 +9,8 @@ import (
 	"github.com/rivo/tview"
 )
 
+const NormalMovingSpeed = 8.0
+
 type Player struct {
 	Level    int
 	LevelExp int
@@ -61,7 +63,14 @@ func (p *Player) MoveTo(x, y int) {
 
 func (p *Player) Box(x, y int) Box {
 	// The (x, y) refers to the center, which is the left side of the belt.
-	return NewBox(x-4, y-2, x+5, y+2)
+	return NewBox(p.X-4, p.Y-2, p.X+5, p.Y+2)
+}
+
+func (p *Player) Hit(damage int) {
+	p.Life -= damage
+	if p.Life < 0 {
+		p.Life = 0
+	}
 }
 
 func (p *Player) AddExp(exp int) {
@@ -217,7 +226,7 @@ func (p *Player) TotalMana() int {
 }
 
 func (p *Player) MovementSpeed() float64 {
-	return 8
+	return NormalMovingSpeed
 }
 
 func (p *Player) String() string {

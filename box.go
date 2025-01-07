@@ -42,6 +42,10 @@ func (b1 Box) Touching(b2 Box) bool {
 	return touchingLeft || touchingRight || touchingTop || touchingBottom
 }
 
+func (b1 Box) Contains(x, y int) bool {
+	return x >= b1.x1 && x <= b1.x2 && y >= b1.y1 && y <= b1.y2
+}
+
 func middle(a, b int) float64 {
 	return (float64(a) + float64(b)) / 2
 }

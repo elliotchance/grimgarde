@@ -58,6 +58,13 @@ func (m *Monster) Box(x, y int) Box {
 	return m.Sprite.Box(m.X, m.Y)
 }
 
+func (m *Monster) Hit(damage int) {
+	m.Life -= damage
+	if m.Life < 0 {
+		m.Life = 0
+	}
+}
+
 func (m *Monster) Attack(player *Player) bool {
 	minTimeBetweenAttacks := time.Duration(float64(time.Second) / m.AttackSpeed)
 	if time.Since(m.LastAttack) >= minTimeBetweenAttacks {

@@ -73,6 +73,11 @@ func (p *Player) Hit(damage int) {
 	}
 }
 
+func (p *Player) Attack(monster *Monster) bool {
+	monster.Hit(75)
+	return monster.Life == 0
+}
+
 func (p *Player) AddExp(exp int) {
 	p.TotalExp += exp
 	nextLevel := p.NextLevelExp(p.Level)

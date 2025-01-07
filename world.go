@@ -13,6 +13,7 @@ type World struct {
 	Map             *Map
 	FramesPerSecond int
 	Monsters        []*Monster
+	msg             string
 }
 
 func NewWorld(m *Map, player *Player, fps int) *World {
@@ -30,7 +31,37 @@ func NewWorld(m *Map, player *Player, fps int) *World {
 			// viewport and player location.
 			x, y := event.Position()
 			vx, vy, vw, vh := box.GetInnerRect()
-			w.player.MoveTo(w.player.X-(vw/2)+x-vx, w.player.Y-(vh/2)+y+vy)
+			realX, realY := w.player.X-(vw/2)+x-vx, w.player.Y-(vh/2)+y+vy
+
+			// Attacking a monster?
+			didAttackMonster := false
+			for _, monster := range w.Monsters {
+				if monster.Life == 0 {
+					continue
+				}
+				monsterBox := monster.Box(0, 0)
+				if monsterBox.Contains(realX, realY) && w.player.Box(0, 0).Intersect(monsterBox) {
+					w.player.Attack(monster)
+					didAttackMonster = true
+				}
+			}
+
+			if !didAttackMonster {
+				if realX > player.X {
+					w.player.X++
+				}
+				if realX < player.X {
+					w.player.X--
+				}
+				if realY > player.Y {
+					w.player.Y++
+				}
+				if realY < player.Y {
+					w.player.Y--
+				}
+			}
+
+			w.player.MoveTo(realX, realY)
 		}
 		return action, event
 	})
@@ -68,13 +99,15 @@ func (w *World) Draw(screen tcell.Screen) {
 	}
 
 	for _, monster := range w.Monsters {
-		monster.Draw(screen, monster.X-w.player.X+x+(width/2), monster.Y-w.player.Y+y+(height/2))
+		if monster.Life > 0 {
+			monster.Draw(screen, monster.X-w.player.X+x+(width/2), monster.Y-w.player.Y+y+(height/2))
 
-		b := monster.Box(0, 0)
-		w.Print(screen, b.x1, b.y1, "+")
-		w.Print(screen, b.x2, b.y1, "+")
-		w.Print(screen, b.x1, b.y2, "+")
-		w.Print(screen, b.x2, b.y2, "+")
+			// b := monster.Box(0, 0)
+			// w.Print(screen, b.x1, b.y1, "+")
+			// w.Print(screen, b.x2, b.y1, "+")
+			// w.Print(screen, b.x1, b.y2, "+")
+			// w.Print(screen, b.x2, b.y2, "+")
+		}
 	}
 
 	w.player.Draw(screen, x+(width/2), y+(height/2))
@@ -84,7 +117,7 @@ func (w *World) Draw(screen tcell.Screen) {
 	// w.Print(screen, b.x2, b.y1, "+")
 	// w.Print(screen, b.x1, b.y2, "+")
 	// w.Print(screen, b.x2, b.y2, "+")
-	// w.Print(screen, b.x1, b.y2+3, fmt.Sprintf("%d == %d", w.Monsters[0].Box(0, 0).x2, b.x1-1))
+	// w.Print(screen, b.x1, b.y2+3, w.msg, b.x1-1))
 }
 
 func (w *World) Print(screen tcell.Screen, atX, atY int, s string) {
@@ -108,17 +141,28 @@ func (w *World) Start(app *tview.Application) {
 					redraw := false
 					if w.player.Path.IsMoving {
 						w.player.X, w.player.Y = w.player.Path.Tick(func(b Box) bool {
+							for _, monster := range w.Monsters {
+								if monster.Life > 0 && monster.Box(0, 0).Intersect(b) {
+									return false
+								}
+							}
 							return true
 						})
 						redraw = true
 
 						// When the player moves, the monsters should follow.
 						for _, monster := range w.Monsters {
-							monster.MoveTo(w.player.X, w.player.Y)
+							if monster.Life > 0 {
+								monster.MoveTo(w.player.X, w.player.Y)
+							}
 						}
 					}
 
 					for _, monster := range w.Monsters {
+						if monster.Life == 0 {
+							continue
+						}
+
 						if monster.Path.IsMoving {
 							redraw = true
 							monster.Tick(func(b Box) bool {

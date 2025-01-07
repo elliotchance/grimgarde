@@ -95,3 +95,18 @@ func TestBox_Touching(t *testing.T) {
 	assert.True(t, NewBox(5, 6-7, 8, 8-7).Touching(NewBox(2, 2, 4, 4)))
 	assert.False(t, NewBox(5, 6-8, 8, 8-8).Touching(NewBox(2, 2, 4, 4)))
 }
+
+func TestBox_Contains(t *testing.T) {
+	b1 := NewBox(5, 3, 7, 5)
+	assert.False(t, b1.Contains(4, 3))
+	assert.True(t, b1.Contains(5, 3))
+	assert.True(t, b1.Contains(6, 3))
+	assert.True(t, b1.Contains(7, 3))
+	assert.False(t, b1.Contains(8, 3))
+
+	assert.False(t, b1.Contains(5, 2))
+	assert.True(t, b1.Contains(5, 3))
+	assert.True(t, b1.Contains(5, 4))
+	assert.True(t, b1.Contains(5, 5))
+	assert.False(t, b1.Contains(5, 6))
+}
